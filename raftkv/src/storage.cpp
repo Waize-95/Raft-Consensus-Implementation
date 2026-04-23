@@ -1,5 +1,7 @@
 #include<iostream>
 #include<fstream>
+#include<unistd.h>
+#include<fcntl.h>
 using namespace std;
 
 struct MetaData{
@@ -11,11 +13,15 @@ struct MetaData{
 };
 
 bool updateMetaData(const MetaData& metadata){
-    ofstream out("metadata.bin",ios::out |ios::app | ios::binary);
-    if(!out.is_open()){
+    ofstream file("metadata.bin",ios::out |ios::trunc | ios::binary);
+    if(!file.is_open()){
         cerr<<"Failed to open metadata file for writing"<<endl;
         return false;
     }
-
-
+    file.write(reinterpret_cast<const char*>(&metadata),sizeof(metadata));
+    file.close();
+    // fsync();
+    return true;
 }
+
+
