@@ -9,19 +9,25 @@ struct MetaData{
     u_int64_t votedFor;
     u_int64_t logIndex;
     u_int64_t logTerm;
-    MetaData():currentTerm(0),votedFor(0){}
+    MetaData():currentTerm(0),votedFor(0),logIndex(0),logTerm(0){}
 };
 
 bool updateMetaData(const MetaData& metadata){
-    ofstream file("metadata.bin",ios::out |ios::trunc | ios::binary);
-    if(!file.is_open()){
-        cerr<<"Failed to open metadata file for writing"<<endl;
+    int descriptor=open("metadata.bin", O_WRONLY|O_CREAT| O_TRUNC, 0644);
+    if(descriptor==-1){
+        cerr<<"Couldn't open the metadata.bin file for writing"<<endl;
         return false;
     }
-    file.write(reinterpret_cast<const char*>(&metadata),sizeof(metadata));
-    file.close();
-    // fsync();
+    ssize_t written_data=write(descriptor,&metadata,sizeof(metadata));
+    if(written_data!=sizeof(metadata)){
+        cerr<<"Failed to write properly in the metadata.bin file"<<endl;
+        close(descriptor);
+        return false;
+    }
+    fsync(descriptor);
+    close(descriptor);
     return true;
 }
+
 
 
