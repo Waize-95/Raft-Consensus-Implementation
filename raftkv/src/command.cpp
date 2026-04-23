@@ -42,3 +42,9 @@ Command Deserialize(const vector<u_int8_t>& result){
     cmd.value=string(result.begin()+5+key_len1,result.begin()+5+key_len1+val_len1);
     return cmd;
 }
+
+
+
+// for serialize, converting the command struct into a byte vector 
+// for deserialize, converting the byte vector back into a command struct
+// may have to add the noop 
