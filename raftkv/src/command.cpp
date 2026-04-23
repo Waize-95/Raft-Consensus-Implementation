@@ -10,6 +10,7 @@ struct Command{
     u_int16_t value_len;
     string key;
     string value;
+    Command():operation(0),key_len(0),value_len(0),key(""),value(""){};
 };
 
 vector<u_int8_t> Serialize(u_int8_t op,u_int16_t key_l,u_int16_t val_l, const string& _key,
@@ -20,7 +21,7 @@ const string& _value){
     result.push_back(op);
     u_int8_t key_high=static_cast<u_int8_t>((key_l>>8)&0xFF);
     result.push_back(key_high);
-    u_int8_t key_low=static_cast<u_int8_t>(key_l&0xFF);
+    u_int8_t key_low=static_cast<u_int8_t>(key_l&0xFF); 
     result.push_back(key_low);
     u_int8_t val_high=static_cast<u_int8_t>((val_l>>8)&0xFF);
     result.push_back(val_high);
