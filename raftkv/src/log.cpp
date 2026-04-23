@@ -56,7 +56,7 @@ vector<LogEntry> DeserializeLogEntry(const vector<u_int8_t>& data){
             checksum = (checksum << 8) | data[pos++];
         }
         
-        logs.emplace_back(term, index, cmd);
+        logs.emplace_back(term, index, cmd,checksum);
     }
     return logs;
 }
