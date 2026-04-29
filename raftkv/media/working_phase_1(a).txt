@@ -1,0 +1,2 @@
+In the above picture i am representing showing the basic CRUD commands that are 
+working correctlt, like put,get and quit
