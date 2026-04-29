@@ -1,0 +1,263 @@
+# Phase 1 — Single Node with Persistent Log and State Machine
+
+## Overview
+
+Phase 1 builds the foundation that all future phases (elections, replication, full Raft) will sit on top of.
+The goal is a single-process node that:
+- Maintains its persistent state on disk
+- Accepts client commands over TCP
+- Applies them to a key-value state machine
+- Survives a crash and restarts with all data intact
+
+No elections. No RPCs between nodes. No distributed anything. Just a crash-safe key-value store.
+
+---
+
+## Project Structure
+
+```
+raftkv/
+├── Makefile
+├── src/
+│   ├── command.cpp       ← command serialization / deserialization
+│   ├── log.cpp           ← log entry format, CRC32, append, read
+│   ├── storage.cpp       ← persistent state on disk (metadata.bin + logs.bin)
+│   ├── statemachine.cpp  ← in-memory key-value hash map
+│   ├── server.cpp        ← TCP server, handles all client commands
+│   └── main.cpp          ← entry point: arg parsing + startup recovery
+└── cli/
+    ├── client.cpp        ← TCP client class (connect, send, recv)
+    └── main.cpp          ← raftkv-cli interactive REPL
+```
+
+---
+
+## How to Build
+
+Navigate to the `raftkv/` directory and run:
+
+```bash
+cd raftkv/
+make clean && make all
+```
+
+This produces two binaries:
+- `raftkv`      — the server
+- `raftkv-cli`  — the interactive client
+
+---
+
+## How to Run
+
+### Step 1 — Start the server (Terminal 1)
+
+```bash
+./raftkv --id 1 --port 6001 --data ./d1
+```
+
+Arguments:
+- `--id`    Node ID (any integer, e.g. 1)
+- `--port`  Port to listen for client connections
+- `--data`  Directory where persistent state is stored (created automatically if it doesn't exist)
+
+Expected startup output:
+```
+[node 1] starting
+[node 1] persistent state loaded: currentTerm=0 votedFor=none log=[0 entries]
+[node 1] entering LEADER state, term 0
+[node 1] ready for client commands on port 6001
+```
+
+### Step 2 — Connect the client (Terminal 2)
+
+```bash
+./raftkv-cli localhost 6001
+```
+
+Expected output:
+```
+connected to localhost:6001
+>
+```
+
+---
+
+## Implemented Components and How They Satisfy Each Requirement
+
+---
+
+### Requirement 1 — Persistent State File
+
+> *"A binary file containing currentTerm, votedFor, and the log. Append-only log file plus a small metadata file. Use fsync after every update."*
+
+**Implementation:** `src/storage.cpp`
+
+Two files are created in the `--data` directory:
+
+- **`metadata.bin`** — fixed-size 32-byte binary file containing:
+  - `currentTerm` (uint64)
+  - `votedFor`    (uint64, 0 = none)
+  - `commitIndex` (uint64)
+  - `lastApplied` (uint64)
+
+- **`logs.bin`** — append-only binary file. Each new log entry is appended to the end. Old entries are never rewritten.
+
+Both files call `fsync()` after every write before returning, guaranteeing the OS flushes data to disk even if the process crashes immediately after.
+
+Key functions:
+- `initStorage()`      — creates the data directory and files on first boot
+- `updateMetaData()`   — writes + fsyncs metadata.bin
+- `getMetaData()`      — reads metadata.bin
+- `writelog()`         — appends + fsyncs one entry to logs.bin
+- `readLogs()`         — reads all entries from logs.bin with CRC validation
+- `truncateLogFile()`  — discards a partial entry at the tail after a crash mid-write
+
+---
+
+### Requirement 2 — Log Entry Serializer with CRC32
+
+> *"Convert a log entry struct to and from bytes. Include a CRC32 over each entry."*
+
+**Implementation:** `src/log.cpp` (includes `command.cpp`)
+
+Each log entry on disk has this binary layout:
+
+```
+[ term     : 8 bytes, uint64, big-endian ]
+[ index    : 8 bytes, uint64, big-endian ]
+[ command  : 5 + key_len + value_len bytes ]
+[ crc32    : 4 bytes, uint32, big-endian ]
+```
+
+The CRC32 is computed over the term + index + command bytes using the standard IEEE polynomial (0xEDB88320). On read, the CRC is recomputed and compared — if it doesn't match, that entry is treated as a partial write from a crash, and deserialization stops at that point. `truncateLogFile()` then removes the corrupted tail.
+
+The command format (from Section 6 of the manual):
+```
+Byte 0:     op_type    (1=PUT, 2=DELETE, 3=NOOP)
+Bytes 1-2:  key_len    (uint16, big-endian)
+Bytes 3-4:  value_len  (uint16, big-endian)
+Bytes 5+:   key bytes, then value bytes
+```
+
+Key functions:
+- `SerializeLogEntry()`    — struct → bytes (auto-computes CRC32)
+- `DeserializeLogEntry()`  — bytes → vector of structs (validates CRC32, stops on corruption)
+- `computeCRC32()`         — table-based CRC32 implementation
+
+---
+
+### Requirement 3 — Key-Value State Machine
+
+> *"A hash map with apply(command) and get(key) methods."*
+
+**Implementation:** `src/statemachine.cpp`
+
+`KVStateMachine` wraps a `std::unordered_map<string, string>`:
+
+- `apply(command)`:
+  - `PUT (1)`    → inserts or overwrites the key
+  - `DELETE (2)` → removes the key
+  - `NOOP (3)`   → does nothing
+- `get(key)`  → returns value string, or empty string if key not found
+- `has(key)`  → returns true if key exists
+- `getAll()`  → returns the entire map (used for debugging)
+
+The state machine is always rebuilt from the log on startup — it is never persisted separately. The log is the single source of truth.
+
+---
+
+### Requirement 4 — TCP Server (PUT, GET, DELETE, \status, QUIT)
+
+> *"A TCP server that accepts client connections and handles PUT, GET, DELETE, \status, and QUIT. The server appends commands to the log, applies them immediately, and responds."*
+
+**Implementation:** `src/server.cpp`
+
+Uses `poll()` for non-blocking I/O — supports multiple simultaneous client connections with a single thread.
+
+Line-based text protocol (client sends a line, server replies with a line or multiple lines):
+
+| Command          | What happens                                                                 | Response                                  |
+|------------------|------------------------------------------------------------------------------|-------------------------------------------|
+| `PUT key value`  | Creates log entry → writes to disk (fsync) → applies to state machine → updates metadata (fsync) | `OK committed at index N in term 0` |
+| `GET key`        | Direct lookup in state machine (no log entry created)                        | `value` or `NOT_FOUND`                   |
+| `DELETE key`     | Creates log entry → writes to disk (fsync) → applies to state machine → updates metadata (fsync) | `OK`                        |
+| `\status`        | Reads current node state                                                     | Multi-line status block (see below)       |
+| `QUIT`           | Closes the connection                                                        | `Goodbye`                                 |
+
+`\status` output format:
+```
+node_id:      1
+state:        LEADER
+term:         0
+commitIndex:  3
+lastApplied:  3
+log length:   3
+```
+
+In Phase 1, `state` is always `LEADER` and `term` is always `0` since there is no Raft protocol yet.
+
+---
+
+### Requirement 5 — Startup Recovery
+
+> *"On launch, read the persistent state file, rebuild the log, replay committed entries into the state machine, and begin accepting clients."*
+
+**Implementation:** `server.cpp` (`recover()` method) + `src/main.cpp`
+
+Recovery sequence on every startup:
+
+1. `initStorage()` — create data directory and files if this is first boot
+2. `getMetaData()` — load `currentTerm`, `votedFor`, `commitIndex`, `lastApplied`
+3. `readLogs()` — deserialize all log entries from `logs.bin`, validate CRC32 on each
+4. If any entry fails CRC → `truncateLogFile()` to discard the corrupted tail
+5. Replay every entry where `index <= lastApplied` into the state machine
+6. If the log has more entries than `lastApplied` (crash before metadata was updated), apply those too and fix metadata
+7. Print recovery summary and start the TCP server
+
+This means: if you PUT three keys and the server crashes before it responds to the client, after restart all three keys are in the state machine and `commitIndex` is correct.
+
+---
+
+### Requirement 6 — Client Binary (raftkv-cli)
+
+> *"The client binary raftkv-cli."*
+
+**Implementation:** `cli/client.cpp` + `cli/main.cpp`
+
+`raftkv-cli` is an interactive REPL:
+- Connects to the server via TCP
+- Reads commands from stdin line by line
+- Sends each command to the server
+- Prints the response
+- Has a **3-second timeout** on server responses — if the server doesn't reply in 3 seconds, it reports an error
+- Exits cleanly on `QUIT` or EOF (Ctrl+D)
+
+Usage:
+```bash
+./raftkv-cli <host> <port>
+```
+
+---
+
+## Demo Screenshots
+
+Screenshots demonstrating Phase 1 are saved in the `media/` directory:
+
+- **CRUD operations** — shows PUT, GET, DELETE, and NOT_FOUND responses working correctly
+- **\status command** — shows the status output with term=0, commitIndex, lastApplied, and log length
+- **Crash recovery / persistence** — shows data surviving a server kill and restart (GET returns correct values after restart, \status shows the correct log length recovered from disk)
+
+---
+
+## Summary — All Requirements Met
+
+| Requirement | File | Status |
+|---|---|---|
+| Persistent state (metadata.bin + logs.bin) with fsync | `storage.cpp` | ✅ Complete |
+| Log entry serializer with CRC32 | `log.cpp` | ✅ Complete |
+| Key-value state machine (apply + get) | `statemachine.cpp` | ✅ Complete |
+| TCP server: PUT, GET, DELETE, \status, QUIT | `server.cpp` | ✅ Complete |
+| Startup recovery (read state, replay log) | `server.cpp`, `main.cpp` | ✅ Complete |
+| Client binary raftkv-cli | `cli/main.cpp`, `cli/client.cpp` | ✅ Complete |
+| \status prints term, log length, commitIndex | `server.cpp` | ✅ Complete |
+| Crashes and restarts preserve all data | `storage.cpp`, `server.cpp` | ✅ Tested |
