@@ -5,20 +5,36 @@
 #include<cstring>
 #include<sstream>
 #include<algorithm>
+#include<mutex>
 #include"statemachine.cpp"
 
-// Phase 1: Single-node TCP server.
+// Raft node roles
+enum Role { FOLLOWER, CANDIDATE, LEADER };
+
+string roleToString(Role r){
+    switch(r){
+        case FOLLOWER:  return "FOLLOWER";
+        case CANDIDATE: return "CANDIDATE";
+        case LEADER:    return "LEADER";
+        default:        return "UNKNOWN";
+    }
+}
+
+// Raft TCP server.
 // Accepts client connections and handles PUT/GET/DELETE/\status/QUIT.
-// In Phase 1, every command is committed immediately (no Raft protocol).
 class RaftServer{
 private:
     u_int64_t node_id;
     int port;
+    Role role;
+    vector<pair<string,int>> peers;
+    std::mutex raft_mutex;
     KVStateMachine state_machine;
     MetaData metadata;
     vector<LogEntry> log_entries;
 
     // Parse a client command line and return the response
+    // Acquires raft_mutex to protect shared state from concurrent access
     string handleCommand(const string& line){
         // Trim trailing \r\n
         string trimmed = line;
@@ -35,6 +51,9 @@ private:
         // Convert to uppercase for comparison
         string upper_cmd = cmd;
         for(auto& c : upper_cmd) c = toupper(c);
+
+        // Lock shared state for the duration of command processing
+        std::lock_guard<std::mutex> lock(raft_mutex);
 
         if(upper_cmd == "PUT"){
             string key, value;
@@ -147,16 +166,28 @@ private:
     string handleStatus(){
         string result;
         result += "node_id:      " + to_string(node_id) + "\n";
-        result += "state:        LEADER\n";
+        result += "state:        " + roleToString(role) + "\n";
         result += "term:         " + to_string(metadata.currentTerm) + "\n";
         result += "commitIndex:  " + to_string(metadata.commitIndex) + "\n";
         result += "lastApplied:  " + to_string(metadata.lastApplied) + "\n";
         result += "log length:   " + to_string(log_entries.size()) + "\n";
+        // Show peer list
+        result += "peers:        ";
+        if(peers.empty()){
+            result += "(none)";
+        }else{
+            for(size_t i=0; i<peers.size(); i++){
+                if(i>0) result += ", ";
+                result += peers[i].first + ":" + to_string(peers[i].second);
+            }
+        }
+        result += "\n";
         return result;
     }
 
 public:
-    RaftServer(u_int64_t id, int p):node_id(id),port(p){}
+    RaftServer(u_int64_t id, int p, const vector<pair<string,int>>& peer_list = {})
+        :node_id(id),port(p),role(FOLLOWER),peers(peer_list){}
 
     // Run startup recovery: load metadata, replay log into state machine
     bool recover(){
