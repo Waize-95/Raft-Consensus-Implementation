@@ -7,6 +7,7 @@
 #include<algorithm>
 #include<mutex>
 #include"statemachine.cpp"
+#include"rcp.cpp"
 
 // Raft node roles
 enum Role { FOLLOWER, CANDIDATE, LEADER };
