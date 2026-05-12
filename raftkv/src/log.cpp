@@ -1,3 +1,6 @@
+#ifndef LOG_CPP
+#define LOG_CPP
+
 #include <iostream>
 #include "command.cpp"
 
@@ -120,3 +123,5 @@ vector<LogEntry> DeserializeLogEntry(const vector<u_int8_t>& data, size_t& valid
     valid_bytes = pos;
     return logs;
 }
+
+#endif // LOG_CPP

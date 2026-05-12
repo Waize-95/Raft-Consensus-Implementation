@@ -1,3 +1,6 @@
+#ifndef SERVER_CPP
+#define SERVER_CPP
+
 #include<sys/socket.h>
 #include<netinet/in.h>
 #include<arpa/inet.h>
@@ -356,3 +359,5 @@ public:
         close(listen_fd);
     }
 };
+
+#endif // SERVER_CPP

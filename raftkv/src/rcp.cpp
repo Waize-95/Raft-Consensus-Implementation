@@ -12,13 +12,16 @@
 
 #ifndef RCP_CPP
 #define RCP_CPP
-
+#include "log.cpp"
+#include <bits/stdc++.h>
 #include <cstdint>
 #include <cstring>
 #include <vector>
 #include <iostream>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 // Forward declaration: LogEntry is defined in log.cpp (included earlier in the chain)
 
@@ -263,7 +266,7 @@ static bool sendAll(int fd, const void* data, size_t len) {
     const uint8_t* ptr = static_cast<const uint8_t*>(data);
     size_t remaining = len;
     while (remaining > 0) {
-        ssize_t n = ::send(fd, ptr, remaining, MSG_NOSIGNAL);
+        ssize_t n = send(fd, ptr, remaining, 0); // Removed :: and MSG_NOSIGNAL
         if (n <= 0) {
             if (n < 0 && errno == EINTR) continue;
             return false;   // peer closed or error
@@ -279,7 +282,7 @@ static bool recvAll(int fd, void* data, size_t len) {
     uint8_t* ptr = static_cast<uint8_t*>(data);
     size_t remaining = len;
     while (remaining > 0) {
-        ssize_t n = ::recv(fd, ptr, remaining, 0);
+        ssize_t n = recv(fd, ptr, remaining, 0); // Removed ::
         if (n <= 0) {
             if (n < 0 && errno == EINTR) continue;
             return false;   // peer closed or error

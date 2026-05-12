@@ -1,3 +1,6 @@
+#ifndef STORAGE_CPP
+#define STORAGE_CPP
+
 #include<iostream>
 #include<fstream>
 #include<unistd.h>
@@ -140,3 +143,5 @@ bool truncateLogFile(size_t valid_bytes){
     }
     return true;
 }
+
+#endif // STORAGE_CPP

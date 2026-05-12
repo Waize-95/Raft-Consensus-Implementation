@@ -1,3 +1,6 @@
+#ifndef STATEMACHINE_CPP
+#define STATEMACHINE_CPP
+
 #include<unordered_map>
 #include"storage.cpp"
 
@@ -43,3 +46,5 @@ public:
         return store;
     }
 };
+
+#endif // STATEMACHINE_CPP

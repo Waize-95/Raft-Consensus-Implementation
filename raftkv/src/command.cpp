@@ -1,3 +1,6 @@
+#ifndef COMMAND_CPP
+#define COMMAND_CPP
+
 #include<iostream>
 #include<vector>
 #include<string>
@@ -43,6 +46,8 @@ Command Deserialize(const vector<u_int8_t>& result){
     cmd.value=string(result.begin()+5+key_len1,result.begin()+5+key_len1+val_len1);
     return cmd;
 }
+
+#endif // COMMAND_CPP
 
 
 
