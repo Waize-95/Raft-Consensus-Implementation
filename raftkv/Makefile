@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -lpthread
+CXXFLAGS = -std=c++17 -Wall -Wextra -O2 -pthread
 
 all: raftkv raftkv-cli
 
