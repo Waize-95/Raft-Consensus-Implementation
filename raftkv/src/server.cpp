@@ -496,54 +496,13 @@ private:
     }
 
     string handlePut(const string& key, const string& value){
-        Command cmd;
-        cmd.operation = 1;
-        cmd.key = key;
-        cmd.value = value;
-        cmd.key_len = key.size();
-        cmd.value_len = value.size();
-
-        u_int64_t new_index = log_entries.size() + 1;
-        LogEntry entry(metadata.currentTerm, new_index, cmd);
-
-        if(!writelog(entry))
-            return "ERR: failed to persist log entry\n";
-
-        log_entries.push_back(entry);
-        state_machine.apply(cmd);
-
-        metadata.commitIndex = new_index;
-        metadata.lastApplied = new_index;
-        if(!updateMetaData(metadata))
-            return "ERR: failed to persist metadata\n";
-
-        return "OK committed at index " + to_string(new_index) +
-               " in term " + to_string(metadata.currentTerm) + "\n";
+        (void)key; (void)value;
+        return "ERR: log replication is not yet implemented\n";
     }
 
     string handleDelete(const string& key){
-        Command cmd;
-        cmd.operation = 2;
-        cmd.key = key;
-        cmd.value = "";
-        cmd.key_len = key.size();
-        cmd.value_len = 0;
-
-        u_int64_t new_index = log_entries.size() + 1;
-        LogEntry entry(metadata.currentTerm, new_index, cmd);
-
-        if(!writelog(entry))
-            return "ERR: failed to persist log entry\n";
-
-        log_entries.push_back(entry);
-        state_machine.apply(cmd);
-
-        metadata.commitIndex = new_index;
-        metadata.lastApplied = new_index;
-        if(!updateMetaData(metadata))
-            return "ERR: failed to persist metadata\n";
-
-        return "OK\n";
+        (void)key;
+        return "ERR: log replication is not yet implemented\n";
     }
 
     string handleGet(const string& key){
@@ -560,16 +519,18 @@ private:
         result += "commitIndex:  " + to_string(metadata.commitIndex) + "\n";
         result += "lastApplied:  " + to_string(metadata.lastApplied) + "\n";
         result += "log length:   " + to_string(log_entries.size()) + "\n";
-        result += "peers:        ";
-        if(peers.empty()){
-            result += "(none)";
-        }else{
-            for(size_t i=0; i<peers.size(); i++){
-                if(i>0) result += ", ";
-                result += peers[i].first + ":" + to_string(peers[i].second);
+        if(role == LEADER){
+            result += "peers:        ";
+            if(peers.empty()){
+                result += "(none)";
+            }else{
+                for(size_t i=0; i<peers.size(); i++){
+                    if(i>0) result += ", ";
+                    result += peers[i].first + ":" + to_string(peers[i].second);
+                }
             }
+            result += "\n";
         }
-        result += "\n";
         return result;
     }
 

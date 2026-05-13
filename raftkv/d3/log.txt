@@ -1,0 +1,13 @@
+[node 3] starting (client port=5003, peer port=6003)
+[node 3] peer: 127.0.0.1:6001
+[node 3] peer: 127.0.0.1:6002
+[node 3] peer: 127.0.0.1:6004
+[node 3] peer: 127.0.0.1:6005
+[node 3] persistent state loaded: currentTerm=1 votedFor=3 log=[0 entries]
+[node 3] entering FOLLOWER state, term 0
+[node 3] listening for peer RPCs on port 6003
+[node 3] ready for client commands on port 5003
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client quit

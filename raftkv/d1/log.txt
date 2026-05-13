@@ -1,0 +1,20 @@
+[node 1] starting (client port=5001, peer port=6001)
+[node 1] peer: 127.0.0.1:6002
+[node 1] peer: 127.0.0.1:6003
+[node 1] peer: 127.0.0.1:6004
+[node 1] peer: 127.0.0.1:6005
+[node 1] persistent state loaded: currentTerm=0 votedFor=none log=[0 entries]
+[node 1] entering FOLLOWER state, term 0
+[node 1] ready for client commands on port 5001
+[node 1] listening for peer RPCs on port 6001
+[node 1] voted for node 3 in term 1
+[node 1] client connected
+[node 1] client disconnected
+[node 1] client connected
+[node 1] client disconnected
+[node 1] client connected
+[node 1] client disconnected
+[node 1] election timeout -> CANDIDATE term 2
+[node 1] became LEADER for term 2 with 3 votes
+[node 1] client connected
+[node 1] client disconnected
