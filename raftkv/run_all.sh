@@ -10,7 +10,9 @@ if [ ! -f "$RAFTKV" ]; then
     exit 1
 fi
 
-echo "Cleaning up old data directories..."
+echo "Cleaning up old data directories and processes..."
+pkill -f "$RAFTKV" 2>/dev/null || true
+sleep 1
 rm -rf "$SCRIPT_DIR"/d{1,2,3,4,5} 2>/dev/null || true
 
 echo "Starting 5-node raft cluster..."
