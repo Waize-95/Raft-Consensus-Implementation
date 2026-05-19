@@ -36,6 +36,10 @@ PEERS="${PEERS_ALL[$ID]}"
 
 mkdir -p "$DATA_DIR"
 
+echo "Checking for any rogue instances of Server $ID..."
+pkill -f "$RAFTKV.*--id $ID " 2>/dev/null || true
+sleep 0.5
+
 echo "Starting Server $ID..."
 echo "Command: $RAFTKV --id $ID --port $PORT --peer-port $PEER_PORT --data \"$DATA_DIR\" --peers \"$PEERS\""
 $RAFTKV --id $ID --port $PORT --peer-port $PEER_PORT --data "$DATA_DIR" --peers "$PEERS"
