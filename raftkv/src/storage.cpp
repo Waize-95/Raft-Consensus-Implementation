@@ -34,7 +34,7 @@ bool initStorage(){
         MetaData initial;
         int fd = open(meta_path.c_str(), O_WRONLY|O_CREAT|O_TRUNC, 0644);
         if(fd==-1) return false;
-        write(fd, &initial, sizeof(initial));
+        (void)write(fd, &initial, sizeof(initial));
         fsync(fd);
         close(fd);
     }
