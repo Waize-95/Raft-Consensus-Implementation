@@ -1,0 +1,9 @@
+[0;36mPhase 2 Test Suite — Elections, Heartbeats, and Client Handlers[0m
+=================================================================
+
+[1;33m============================================[0m
+[1;33mTEST 1: Normal Election[0m
+[1;33m============================================[0m
+[0;36m[INFO][0m Starting 5-node cluster...
+[0;36m[INFO][0m Waiting for election (2 seconds)...
+[0;32m[PASS][0m Exactly one leader elected (1 leader found)

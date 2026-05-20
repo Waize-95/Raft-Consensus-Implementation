@@ -6,8 +6,11 @@ services:
       - "5001:5001"
     volumes:
       - ./d1:/opt/raftkv/d1
+    networks:
+      raftnet:
+        ipv4_address: 172.20.0.11
     command: >
-      ./raftkv --id 1 --port 5001 --peer-port 6001 --data d1 --peers "2@raft2:6002,3@raft3:6003,4@raft4:6004,5@raft5:6005"
+      ./raftkv --id 1 --port 5001 --peer-port 6001 --data d1 --peers "2@172.20.0.12:6002,3@172.20.0.13:6003,4@172.20.0.14:6004,5@172.20.0.15:6005"
 
   raft2:
     build: .
@@ -16,8 +19,11 @@ services:
       - "5002:5002"
     volumes:
       - ./d2:/opt/raftkv/d2
+    networks:
+      raftnet:
+        ipv4_address: 172.20.0.12
     command: >
-      ./raftkv --id 2 --port 5002 --peer-port 6002 --data d2 --peers "1@raft1:6001,3@raft3:6003,4@raft4:6004,5@raft5:6005"
+      ./raftkv --id 2 --port 5002 --peer-port 6002 --data d2 --peers "1@172.20.0.11:6001,3@172.20.0.13:6003,4@172.20.0.14:6004,5@172.20.0.15:6005"
 
   raft3:
     build: .
@@ -26,8 +32,11 @@ services:
       - "5003:5003"
     volumes:
       - ./d3:/opt/raftkv/d3
+    networks:
+      raftnet:
+        ipv4_address: 172.20.0.13
     command: >
-      ./raftkv --id 3 --port 5003 --peer-port 6003 --data d3 --peers "1@raft1:6001,2@raft2:6002,4@raft4:6004,5@raft5:6005"
+      ./raftkv --id 3 --port 5003 --peer-port 6003 --data d3 --peers "1@172.20.0.11:6001,2@172.20.0.12:6002,4@172.20.0.14:6004,5@172.20.0.15:6005"
 
   raft4:
     build: .
@@ -36,8 +45,11 @@ services:
       - "5004:5004"
     volumes:
       - ./d4:/opt/raftkv/d4
+    networks:
+      raftnet:
+        ipv4_address: 172.20.0.14
     command: >
-      ./raftkv --id 4 --port 5004 --peer-port 6004 --data d4 --peers "1@raft1:6001,2@raft2:6002,3@raft3:6003,5@raft5:6005"
+      ./raftkv --id 4 --port 5004 --peer-port 6004 --data d4 --peers "1@172.20.0.11:6001,2@172.20.0.12:6002,3@172.20.0.13:6003,5@172.20.0.15:6005"
 
   raft5:
     build: .
@@ -46,5 +58,15 @@ services:
       - "5005:5005"
     volumes:
       - ./d5:/opt/raftkv/d5
+    networks:
+      raftnet:
+        ipv4_address: 172.20.0.15
     command: >
-      ./raftkv --id 5 --port 5005 --peer-port 6005 --data d5 --peers "1@raft1:6001,2@raft2:6002,3@raft3:6003,4@raft4:6004"
+      ./raftkv --id 5 --port 5005 --peer-port 6005 --data d5 --peers "1@172.20.0.11:6001,2@172.20.0.12:6002,3@172.20.0.13:6003,4@172.20.0.14:6004"
+
+networks:
+  raftnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
