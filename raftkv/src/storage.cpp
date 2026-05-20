@@ -62,6 +62,17 @@ bool updateMetaData(const MetaData& metadata){
     }
     fsync(descriptor);
     close(descriptor);
+
+    // Write human readable text
+    string txt_path = DATA_DIR + "/metadata.txt";
+    ofstream txt_out(txt_path, ios::trunc);
+    if(txt_out.is_open()){
+        txt_out << "currentTerm=" << metadata.currentTerm << "\n"
+                << "votedFor=" << metadata.votedFor << "\n"
+                << "commitIndex=" << metadata.commitIndex << "\n"
+                << "lastApplied=" << metadata.lastApplied << "\n";
+    }
+
     return true;
 }
 
@@ -103,6 +114,17 @@ bool writelog(const LogEntry& log){
     }
     fsync(descriptor);
     close(descriptor);
+
+    // Write human readable text
+    string txt_path = DATA_DIR + "/logs.txt";
+    ofstream txt_out(txt_path, ios::app);
+    if(txt_out.is_open()){
+        txt_out << "[Term: " << log.term << " | Index: " << log.index << "] "
+                << "OP=" << (int)log.command.operation 
+                << " Key='" << log.command.key 
+                << "' Val='" << log.command.value << "'\n";
+    }
+
     return true;
 }
 
@@ -174,6 +196,21 @@ bool rewriteLog(const vector<LogEntry>& entries){
     // fsync the directory so the rename itself is durable
     int dfd = open(DATA_DIR.c_str(), O_RDONLY);
     if(dfd!=-1){ fsync(dfd); close(dfd); }
+
+    // Rewrite human readable text parallel to binary
+    string txt_path = DATA_DIR + "/logs.txt";
+    string txt_tmp = txt_path + ".tmp";
+    ofstream txt_out(txt_tmp, ios::trunc);
+    if(txt_out.is_open()){
+        for(const auto& e : entries){
+            txt_out << "[Term: " << e.term << " | Index: " << e.index << "] "
+                    << "OP=" << (int)e.command.operation 
+                    << " Key='" << e.command.key 
+                    << "' Val='" << e.command.value << "'\n";
+        }
+    }
+    rename(txt_tmp.c_str(), txt_path.c_str());
+
     return true;
 }
 
