@@ -1,0 +1,63 @@
+# Five-node Raft cluster with real network isolation between containers.
+# Each service shares the same client/peer port numbers; they are reachable by
+# service name (raft1..raft5) on the user-defined bridge network.
+#
+#   docker compose up --build
+#   docker compose stop raft1     # kill a node for chaos testing
+#   docker compose start raft1    # bring it back; it catches up on its own
+#
+# Client ports are published to the host as 5001..5005 so raftkv-cli on the
+# host can reach the cluster:
+#   ./raftkv-cli 1@127.0.0.1:5001 2@127.0.0.1:5002 3@127.0.0.1:5003 \
+#                4@127.0.0.1:5004 5@127.0.0.1:5005
+
+services:
+  raft1:
+    build: .
+    command: ["--id","1","--port","5001","--peer-port","6001","--data","/data",
+              "--peers","2@raft2:6002,3@raft3:6003,4@raft4:6004,5@raft5:6005"]
+    ports: ["5001:5001"]
+    volumes: ["raft1data:/data"]
+    networks: [raftnet]
+
+  raft2:
+    build: .
+    command: ["--id","2","--port","5002","--peer-port","6002","--data","/data",
+              "--peers","1@raft1:6001,3@raft3:6003,4@raft4:6004,5@raft5:6005"]
+    ports: ["5002:5002"]
+    volumes: ["raft2data:/data"]
+    networks: [raftnet]
+
+  raft3:
+    build: .
+    command: ["--id","3","--port","5003","--peer-port","6003","--data","/data",
+              "--peers","1@raft1:6001,2@raft2:6002,4@raft4:6004,5@raft5:6005"]
+    ports: ["5003:5003"]
+    volumes: ["raft3data:/data"]
+    networks: [raftnet]
+
+  raft4:
+    build: .
+    command: ["--id","4","--port","5004","--peer-port","6004","--data","/data",
+              "--peers","1@raft1:6001,2@raft2:6002,3@raft3:6003,5@raft5:6005"]
+    ports: ["5004:5004"]
+    volumes: ["raft4data:/data"]
+    networks: [raftnet]
+
+  raft5:
+    build: .
+    command: ["--id","5","--port","5005","--peer-port","6005","--data","/data",
+              "--peers","1@raft1:6001,2@raft2:6002,3@raft3:6003,4@raft4:6004"]
+    ports: ["5005:5005"]
+    volumes: ["raft5data:/data"]
+    networks: [raftnet]
+
+networks:
+  raftnet:
+
+volumes:
+  raft1data:
+  raft2data:
+  raft3data:
+  raft4data:
+  raft5data:

@@ -26,11 +26,11 @@ echo ""
 
 # Start 5-node cluster
 info "Starting 5-node cluster..."
-$RAFT --id 1 --port 5001 --peer-port 6001 --data $BASEDIR/d1 --peers 127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005 > $BASEDIR/d1/log.txt 2>&1 &
-$RAFT --id 2 --port 5002 --peer-port 6002 --data $BASEDIR/d2 --peers 127.0.0.1:6001,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005 > $BASEDIR/d2/log.txt 2>&1 &
-$RAFT --id 3 --port 5003 --peer-port 6003 --data $BASEDIR/d3 --peers 127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6004,127.0.0.1:6005 > $BASEDIR/d3/log.txt 2>&1 &
-$RAFT --id 4 --port 5004 --peer-port 6004 --data $BASEDIR/d4 --peers 127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6005 > $BASEDIR/d4/log.txt 2>&1 &
-$RAFT --id 5 --port 5005 --peer-port 6005 --data $BASEDIR/d5 --peers 127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004 > $BASEDIR/d5/log.txt 2>&1 &
+$RAFT --id 1 --port 5001 --peer-port 6001 --data $BASEDIR/d1 --peers 2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005 > $BASEDIR/d1/log.txt 2>&1 &
+$RAFT --id 2 --port 5002 --peer-port 6002 --data $BASEDIR/d2 --peers 1@127.0.0.1:6001,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005 > $BASEDIR/d2/log.txt 2>&1 &
+$RAFT --id 3 --port 5003 --peer-port 6003 --data $BASEDIR/d3 --peers 1@127.0.0.1:6001,2@127.0.0.1:6002,4@127.0.0.1:6004,5@127.0.0.1:6005 > $BASEDIR/d3/log.txt 2>&1 &
+$RAFT --id 4 --port 5004 --peer-port 6004 --data $BASEDIR/d4 --peers 1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,5@127.0.0.1:6005 > $BASEDIR/d4/log.txt 2>&1 &
+$RAFT --id 5 --port 5005 --peer-port 6005 --data $BASEDIR/d5 --peers 1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004 > $BASEDIR/d5/log.txt 2>&1 &
 sleep 2
 
 echo ""
@@ -80,15 +80,18 @@ if [ -n "$FPORT" ]; then
 fi
 
 echo ""
-echo "--- Test 3: PUT/DELETE rejection (Phase 2 Step 6) ---"
-PUT_RES=$(echo 'PUT mykey myval' | nc -w 2 127.0.0.1 $LEADER_PORT 2>/dev/null)
-echo "$PUT_RES" | grep -q "ERR: log replication is not yet implemented" && pass "PUT rejected correctly" || fail "PUT wrong response: $PUT_RES"
+echo "--- Test 3: PUT/GET/DELETE replicate & commit (Phase 3) ---"
+PUT_RES=$(echo 'PUT mykey myval' | nc -w 4 127.0.0.1 $LEADER_PORT 2>/dev/null)
+echo "$PUT_RES" | grep -q "^OK" && pass "PUT committed on leader" || fail "PUT wrong response: $PUT_RES"
 
-DEL_RES=$(echo 'DELETE mykey' | nc -w 2 127.0.0.1 $LEADER_PORT 2>/dev/null)
-echo "$DEL_RES" | grep -q "ERR: log replication is not yet implemented" && pass "DELETE rejected correctly" || fail "DELETE wrong response: $DEL_RES"
+GET_RES=$(echo 'GET mykey' | nc -w 4 127.0.0.1 $LEADER_PORT 2>/dev/null)
+echo "$GET_RES" | grep -q "myval" && pass "GET returns committed value" || fail "GET wrong response: $GET_RES"
 
-GET_RES=$(echo 'GET mykey' | nc -w 2 127.0.0.1 $LEADER_PORT 2>/dev/null)
-echo "$GET_RES" | grep -q "NOT_FOUND" && pass "GET still works" || fail "GET wrong response: $GET_RES"
+DEL_RES=$(echo 'DELETE mykey' | nc -w 4 127.0.0.1 $LEADER_PORT 2>/dev/null)
+echo "$DEL_RES" | grep -q "^OK" && pass "DELETE committed on leader" || fail "DELETE wrong response: $DEL_RES"
+
+GET2_RES=$(echo 'GET mykey' | nc -w 4 127.0.0.1 $LEADER_PORT 2>/dev/null)
+echo "$GET2_RES" | grep -q "NOT_FOUND" && pass "GET after DELETE is NOT_FOUND" || fail "GET wrong response: $GET2_RES"
 
 echo ""
 echo "--- Test 4: Leader Crash + Re-election ---"
@@ -111,7 +114,7 @@ done
 echo ""
 echo "--- Test 5: Metadata persistence across crash ---"
 # Restart the crashed node
-PEERS_LIST=("" "127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005" "127.0.0.1:6001,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005" "127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6004,127.0.0.1:6005" "127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6005" "127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004")
+PEERS_LIST=("" "2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005" "1@127.0.0.1:6001,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005" "1@127.0.0.1:6001,2@127.0.0.1:6002,4@127.0.0.1:6004,5@127.0.0.1:6005" "1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,5@127.0.0.1:6005" "1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004")
 $RAFT --id $LEADER_ID --port $((5000+LEADER_ID)) --peer-port $((6000+LEADER_ID)) --data $BASEDIR/d${LEADER_ID} --peers "${PEERS_LIST[$LEADER_ID]}" > $BASEDIR/d${LEADER_ID}/log.txt 2>&1 &
 sleep 1
 RPORT=$((5000+LEADER_ID))

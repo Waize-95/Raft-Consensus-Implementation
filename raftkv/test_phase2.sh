@@ -56,11 +56,11 @@ start_cluster() {
         mkdir -p "$SCRIPT_DIR/d${i}"
     done
 
-    PEERS_1="127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005"
-    PEERS_2="127.0.0.1:6001,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005"
-    PEERS_3="127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6004,127.0.0.1:6005"
-    PEERS_4="127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6005"
-    PEERS_5="127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004"
+    PEERS_1="2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005"
+    PEERS_2="1@127.0.0.1:6001,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005"
+    PEERS_3="1@127.0.0.1:6001,2@127.0.0.1:6002,4@127.0.0.1:6004,5@127.0.0.1:6005"
+    PEERS_4="1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,5@127.0.0.1:6005"
+    PEERS_5="1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004"
 
     $RAFTKV --id 1 --port 5001 --peer-port 6001 --data "$SCRIPT_DIR/d1" --peers "$PEERS_1" > "$SCRIPT_DIR/d1/log.txt" 2>&1 &
     $RAFTKV --id 2 --port 5002 --peer-port 6002 --data "$SCRIPT_DIR/d2" --peers "$PEERS_2" > "$SCRIPT_DIR/d2/log.txt" 2>&1 &
@@ -74,11 +74,11 @@ start_cluster() {
 # Start specific nodes (space-separated list of IDs)
 start_nodes() {
     local nodes="$@"
-    PEERS_ALL=("" "127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005"
-               "127.0.0.1:6001,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005"
-               "127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6004,127.0.0.1:6005"
-               "127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6005"
-               "127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004")
+    PEERS_ALL=("" "2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005"
+               "1@127.0.0.1:6001,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005"
+               "1@127.0.0.1:6001,2@127.0.0.1:6002,4@127.0.0.1:6004,5@127.0.0.1:6005"
+               "1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,5@127.0.0.1:6005"
+               "1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004")
     
     for i in $nodes; do
         mkdir -p "$SCRIPT_DIR/d${i}"
@@ -324,22 +324,21 @@ test_client_handlers() {
     
     info "Leader is on port $leader_port"
     
-    # Test PUT rejection
+    # Phase 3: PUT/DELETE now replicate & commit on the leader
     local put_result
-    put_result=$(echo 'PUT foo bar' | nc -q 1 127.0.0.1 $leader_port 2>/dev/null)
-    if echo "$put_result" | grep -q "ERR: log replication is not yet implemented"; then
-        pass "PUT correctly rejected with replication error"
+    put_result=$(echo 'PUT foo bar' | nc -q 3 127.0.0.1 $leader_port 2>/dev/null)
+    if echo "$put_result" | grep -q "^OK"; then
+        pass "PUT committed on leader"
     else
-        fail "PUT did not return expected error. Got: $put_result"
+        fail "PUT did not commit. Got: $put_result"
     fi
-    
-    # Test DELETE rejection  
+
     local del_result
-    del_result=$(echo 'DELETE foo' | nc -q 1 127.0.0.1 $leader_port 2>/dev/null)
-    if echo "$del_result" | grep -q "ERR: log replication is not yet implemented"; then
-        pass "DELETE correctly rejected with replication error"
+    del_result=$(echo 'DELETE foo' | nc -q 3 127.0.0.1 $leader_port 2>/dev/null)
+    if echo "$del_result" | grep -q "^OK"; then
+        pass "DELETE committed on leader"
     else
-        fail "DELETE did not return expected error. Got: $del_result"
+        fail "DELETE did not commit. Got: $del_result"
     fi
     
     # Test \status on leader (should show peers)

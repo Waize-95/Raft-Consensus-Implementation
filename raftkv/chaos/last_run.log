@@ -1,0 +1,138 @@
+
+>>> BUILD
+make: Nothing to be done for 'all'.
+
+>>> RESET cluster state
+    killed node 1
+    killed node 2
+    killed node 3
+    killed node 4
+    killed node 5
+
+>>> SCENARIO 1: 5 nodes, elect leader, 200 PUTs, verify all agree
+    started node 1 (client 5001, peer 6001)
+    started node 2 (client 5002, peer 6002)
+    started node 3 (client 5003, peer 6003)
+    started node 4 (client 5004, peer 6004)
+    started node 5 (client 5005, peer 6005)
+    [PASS] leader elected: node 5
+    200/200 PUTs acknowledged OK
+    [PASS] all 200 PUTs committed
+    node 1: count=200 hash=1596911758
+    node 2: count=200 hash=1596911758
+    node 3: count=200 hash=1596911758
+    node 4: count=200 hash=1596911758
+    node 5: count=200 hash=1596911758
+    [PASS] all alive nodes agree on state
+    [PASS] committed key count == 200
+
+>>> SCENARIO 2: kill leader, 200 more PUTs, restart killed node, verify catch-up
+    current leader = node 5
+    killed node 5
+    [PASS] new leader elected: node 1
+    200/200 PUTs acknowledged OK
+    [PASS] all 200 PUTs committed after failover
+
+>>> restart node 5
+    started node 5 (client 5005, peer 6005)
+    node 1: count=400 hash=3422279357
+    node 2: count=400 hash=3422279357
+    node 3: count=400 hash=3422279357
+    node 4: count=400 hash=3422279357
+    node 5: count=400 hash=3422279357
+    [PASS] all alive nodes agree on state
+    [PASS] committed key count == 400
+
+>>> SCENARIO 3: kill 2 followers (majority remains), 500 PUTs, restart, verify
+    leader = node 1
+    killed node 2
+    killed node 3
+    killed followers 2 and 3 (3 nodes still alive = majority)
+    500/500 PUTs acknowledged OK
+    [PASS] all 500 PUTs committed with 3/5 alive
+
+>>> restart 2 and 3
+    started node 2 (client 5002, peer 6002)
+    started node 3 (client 5003, peer 6003)
+    node 1: count=900 hash=3690246543
+    node 2: count=900 hash=3690246543
+    node 3: count=900 hash=3690246543
+    node 4: count=900 hash=3690246543
+    node 5: count=900 hash=3690246543
+    [PASS] all alive nodes agree on state
+    [PASS] committed key count == 900
+
+>>> SCENARIO 4: kill 3 nodes (only 2 alive) -> writes must FAIL; restart 1 -> succeed
+    leader = node 1
+    killed node 1
+    killed node 2
+    killed node 3
+    killed nodes: 1 2 3 ; only 2 alive -> no majority possible
+timeout: failed to execute process: No such file or directory (os error 2)
+    0/100 PUTs acknowledged OK (expect 0)
+    [PASS] no writes committed without majority
+
+>>> restart node 1 -> 3 alive again, writes should succeed
+    started node 1 (client 5001, peer 6001)
+    [PASS] leader re-elected with majority: node 5
+    100/100 PUTs acknowledged OK
+    [PASS] 100 PUTs committed once majority restored
+    started node 2 (client 5002, peer 6002)
+    started node 3 (client 5003, peer 6003)
+    node 1: count=1000 hash=2623604363
+    node 2: count=1000 hash=2623604363
+    node 3: count=1000 hash=2623604363
+    node 4: count=1000 hash=2623604363
+    node 5: count=1000 hash=2623604363
+    [PASS] all alive nodes agree on state
+    [PASS] committed key count == 1000
+
+>>> SCENARIO 5: partition 2 nodes from the other 3; majority writes, minority rejects; heal
+    leader = node 5
+    isolating minority {1,2} (kill-based isolation; true bidirectional
+    partitions need iptables/root — see chaos/README notes)
+    killed node 1
+    killed node 2
+    majority side: 100/100 PUTs OK
+    [PASS] majority side accepted writes during partition
+timeout: failed to execute process: No such file or directory (os error 2)
+    minority side: 0/5 PUTs OK (expect 0 — nodes are isolated/down)
+    [PASS] minority side rejected writes
+
+>>> heal partition: restart 1,2
+    started node 1 (client 5001, peer 6001)
+    started node 2 (client 5002, peer 6002)
+    node 1: count=1100 hash=1570036349
+    node 2: count=1100 hash=1570036349
+    node 3: count=1100 hash=1570036349
+    node 4: count=1100 hash=1570036349
+    node 5: count=1100 hash=1570036349
+    [PASS] all alive nodes agree on state
+    [PASS] committed key count == 1100
+
+>>> SCENARIO 6: kill leader partway through 200 PUTs; committed count within margin, no gaps
+    leader = node 5
+    killed node 5
+    killed leader node 5 mid-batch
+    client received 200 OK responses during the chaos
+    [PASS] cluster recovered, leader = node 4
+    started node 5 (client 5005, peer 6005)
+    scenario-6 keys committed: 200 of 200
+    [PASS] committed count 200 within margin [185,200]
+    [PASS] no gaps in committed scenario-6 prefix
+    node 1: count=1300 hash=2622207175
+    node 2: count=1300 hash=2622207175
+    node 3: count=1300 hash=2622207175
+    node 4: count=1300 hash=2622207175
+    node 5: count=1300 hash=2622207175
+    [PASS] all alive nodes agree on state
+
+>>> RESULT: 24 passed, 0 failed
+ALL CHAOS SCENARIOS PASSED
+
+>>> cleanup: stopping all nodes
+    killed node 1
+    killed node 2
+    killed node 3
+    killed node 4
+    killed node 5

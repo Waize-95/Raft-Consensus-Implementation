@@ -7,11 +7,11 @@ rm -rf $BASEDIR/d{1,2,3,4,5}
 mkdir -p $BASEDIR/d{1,2,3,4,5}
 
 echo "Starting fresh 5-node cluster..."
-$RAFT --id 1 --port 5001 --peer-port 6001 --data $BASEDIR/d1 --peers 127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005 > $BASEDIR/d1/log.txt 2>&1 &
-$RAFT --id 2 --port 5002 --peer-port 6002 --data $BASEDIR/d2 --peers 127.0.0.1:6001,127.0.0.1:6003,127.0.0.1:6004,127.0.0.1:6005 > $BASEDIR/d2/log.txt 2>&1 &
-$RAFT --id 3 --port 5003 --peer-port 6003 --data $BASEDIR/d3 --peers 127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6004,127.0.0.1:6005 > $BASEDIR/d3/log.txt 2>&1 &
-$RAFT --id 4 --port 5004 --peer-port 6004 --data $BASEDIR/d4 --peers 127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6005 > $BASEDIR/d4/log.txt 2>&1 &
-$RAFT --id 5 --port 5005 --peer-port 6005 --data $BASEDIR/d5 --peers 127.0.0.1:6001,127.0.0.1:6002,127.0.0.1:6003,127.0.0.1:6004 > $BASEDIR/d5/log.txt 2>&1 &
+$RAFT --id 1 --port 5001 --peer-port 6001 --data $BASEDIR/d1 --peers 2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005 > $BASEDIR/d1/log.txt 2>&1 &
+$RAFT --id 2 --port 5002 --peer-port 6002 --data $BASEDIR/d2 --peers 1@127.0.0.1:6001,3@127.0.0.1:6003,4@127.0.0.1:6004,5@127.0.0.1:6005 > $BASEDIR/d2/log.txt 2>&1 &
+$RAFT --id 3 --port 5003 --peer-port 6003 --data $BASEDIR/d3 --peers 1@127.0.0.1:6001,2@127.0.0.1:6002,4@127.0.0.1:6004,5@127.0.0.1:6005 > $BASEDIR/d3/log.txt 2>&1 &
+$RAFT --id 4 --port 5004 --peer-port 6004 --data $BASEDIR/d4 --peers 1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,5@127.0.0.1:6005 > $BASEDIR/d4/log.txt 2>&1 &
+$RAFT --id 5 --port 5005 --peer-port 6005 --data $BASEDIR/d5 --peers 1@127.0.0.1:6001,2@127.0.0.1:6002,3@127.0.0.1:6003,4@127.0.0.1:6004 > $BASEDIR/d5/log.txt 2>&1 &
 
 sleep 2
 echo "Cluster up. Finding leader..."

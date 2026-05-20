@@ -144,4 +144,37 @@ bool truncateLogFile(size_t valid_bytes){
     return true;
 }
 
+// Rewrite the entire log file from an in-memory vector of entries.
+// Needed when a follower must DELETE conflicting entries (AppendEntries step 4),
+// which an append-only file cannot express. Written to a temp file and atomically
+// renamed so a crash mid-write never leaves a half-written log.
+bool rewriteLog(const vector<LogEntry>& entries){
+    string path = DATA_DIR + "/logs.bin";
+    string tmp  = path + ".tmp";
+    int fd = open(tmp.c_str(), O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    if(fd==-1){
+        cerr<<"Couldn't open temp log file for rewrite"<<endl;
+        return false;
+    }
+    for(const auto& e : entries){
+        vector<u_int8_t> bytes = SerializeLogEntry(e);
+        ssize_t w = write(fd, bytes.data(), bytes.size());
+        if(w != (ssize_t)bytes.size()){
+            cerr<<"Failed to write entry during log rewrite"<<endl;
+            close(fd);
+            return false;
+        }
+    }
+    fsync(fd);
+    close(fd);
+    if(rename(tmp.c_str(), path.c_str())!=0){
+        cerr<<"Failed to atomically replace log file"<<endl;
+        return false;
+    }
+    // fsync the directory so the rename itself is durable
+    int dfd = open(DATA_DIR.c_str(), O_RDONLY);
+    if(dfd!=-1){ fsync(dfd); close(dfd); }
+    return true;
+}
+
 #endif // STORAGE_CPP
