@@ -1,0 +1,33 @@
+[node 3] starting (client port=5003, peer port=6003)
+[node 3] peer: node 1 @ 127.0.0.1:6001
+[node 3] peer: node 2 @ 127.0.0.1:6002
+[node 3] peer: node 4 @ 127.0.0.1:6004
+[node 3] peer: node 5 @ 127.0.0.1:6005
+[node 3] persistent state loaded: currentTerm=2 votedFor=1 log=[902 entries] commitIndex=902
+[node 3] entering FOLLOWER state, term 0
+[node 3] ready for client commands on port 5003
+[node 3] listening for peer RPCs on port 6003
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client disconnected
+[node 3] voted for node 1 in term 10
+[node 3] client connected
+[node 3] client disconnected
+[node 3] voted for node 4 in term 11
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client disconnected
+[node 3] client connected
+[node 3] client disconnected

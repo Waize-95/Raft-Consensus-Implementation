@@ -1,0 +1,59 @@
+[node 4] starting (client port=5004, peer port=6004)
+[node 4] peer: node 1 @ 127.0.0.1:6001
+[node 4] peer: node 2 @ 127.0.0.1:6002
+[node 4] peer: node 3 @ 127.0.0.1:6003
+[node 4] peer: node 5 @ 127.0.0.1:6005
+[node 4] persistent state loaded: currentTerm=0 votedFor=none log=[0 entries] commitIndex=0
+[node 4] entering FOLLOWER state, term 0
+[node 4] ready for client commands on port 5004
+[node 4] listening for peer RPCs on port 6004
+[node 4] voted for node 5 in term 1
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] voted for node 1 in term 2
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] voted for node 5 in term 3
+[node 4] election timeout -> CANDIDATE term 4
+[node 4] voted for node 5 in term 5
+[node 4] voted for node 5 in term 6
+[node 4] voted for node 5 in term 7
+[node 4] election timeout -> CANDIDATE term 8
+[node 4] voted for node 5 in term 9
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] voted for node 2 in term 10
+[node 4] election timeout -> CANDIDATE term 11
+[node 4] became LEADER for term 11 with 3 votes
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
+[node 4] client connected
+[node 4] client disconnected
