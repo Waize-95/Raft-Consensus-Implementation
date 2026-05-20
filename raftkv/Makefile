@@ -15,5 +15,9 @@ raftkv-cli: cli/main.cpp cli/client.cpp
 clean:
 	rm -f raftkv raftkv-cli
 	rm -rf data/ d1/
-
+	rm -rf data/ d2/
+	rm -rf data/ d3/
+	rm -rf data/ d4/
+	rm -rf data/ d5/
+	
 .PHONY: all clean
