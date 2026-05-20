@@ -1,0 +1,1 @@
+printf "PUT user_1 Alice\nPUT user_2 Bob\nPUT user_3 Charlie\nPUT score_1 95\nPUT score_2 82\nPUT db_status active\n\dump\nQUIT\n" | ./raftkv-cli 1@127.0.0.1:5001 2@127.0.0.1:5002 3@127.0.0.1:5003 4@127.0.0.1:5004 5@127.0.0.1:5005
