@@ -1,19 +1,7 @@
-; ==============================================================================
-; clean_log_serialize.asm
-; 16-bit MS-DOS Real Mode Style Assembly
-; 
-; Translates the C++ function logic for:
-; vector<u_int8_t> SerializeLogEntry(const LogEntry& log)
-; 
-; NOTE: In modern 64-bit C++, term and index are 64-bit integers.
-; Since this is a 16-bit MS-DOS simulation, we represent parsing 
-; large 64-bit values using block memory moves and loops.
-; ==============================================================================
 
 org 100h
 jmp start
 
-; --- Dummy LogEntry Data ---
 log_term    dq 0x0000000000000005 ; 64-bit term (Term 5)
 log_index   dq 0x0000000000000010 ; 64-bit index (Index 16 = 10 hex)
 ; Note: We aren't implementing the external CRC32 network call or the 
@@ -21,13 +9,12 @@ log_index   dq 0x0000000000000010 ; 64-bit index (Index 16 = 10 hex)
 
 buffer      times 256 db 0
 
-; ==============================================================================
 ; Routine: serialize_log
 ; Inputs:
 ;   [bp+4]  = Pointer to output byte buffer
 ;   [bp+6]  = Pointer to 64-bit Term variable
 ;   [bp+8]  = Pointer to 64-bit Index variable
-; ==============================================================================
+
 serialize_log:
     push bp
     mov bp, sp
