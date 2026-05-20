@@ -115,7 +115,7 @@ bool writelog(const LogEntry& log){
     fsync(descriptor);
     close(descriptor);
 
-    // Write human readable text
+    //text generated as log txt to be readable
     string txt_path = DATA_DIR + "/logs.txt";
     ofstream txt_out(txt_path, ios::app);
     if(txt_out.is_open()){
