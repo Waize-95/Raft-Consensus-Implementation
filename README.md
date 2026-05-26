@@ -128,3 +128,8 @@ design.md             architecture / RPC / persistence / safety write-up
   exercises the invariants (majority makes progress, minority makes none, the
   minority rejoins and catches up on heal). True bidirectional partitions need
   `iptables`/root.
+
+
+
+THE PROJECT IS COMPLETED
+My branch force pushed on the origin on MAY 26 21:46

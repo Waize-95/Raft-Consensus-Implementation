@@ -15,7 +15,7 @@ make: Nothing to be done for 'all'.
     started node 3 (client 5003, peer 6003)
     started node 4 (client 5004, peer 6004)
     started node 5 (client 5005, peer 6005)
-    [PASS] leader elected: node 3
+    [PASS] leader elected: node 1
     200/200 PUTs acknowledged OK
     [PASS] all 200 PUTs committed
     node 1: count=200 hash=1596911758
@@ -27,14 +27,14 @@ make: Nothing to be done for 'all'.
     [PASS] committed key count == 200
 
 >>> SCENARIO 2: kill leader, 200 more PUTs, restart killed node, verify catch-up
-    current leader = node 3
-    killed node 3
+    current leader = node 1
+    killed node 1
     [PASS] new leader elected: node 5
     200/200 PUTs acknowledged OK
     [PASS] all 200 PUTs committed after failover
 
->>> restart node 3
-    started node 3 (client 5003, peer 6003)
+>>> restart node 1
+    started node 1 (client 5001, peer 6001)
     node 1: count=400 hash=3422279357
     node 2: count=400 hash=3422279357
     node 3: count=400 hash=3422279357
