@@ -261,4 +261,4 @@ Screenshots demonstrating Phase 1 are saved in the `media/` directory:
 | Client binary raftkv-cli | `cli/main.cpp`, `cli/client.cpp` | ✅ Complete |
 | \status prints term, log length, commitIndex | `server.cpp` | ✅ Complete |
 | Crashes and restarts preserve all data | `storage.cpp`, `server.cpp` | ✅ Tested |
-3
+|rcp in progress|
